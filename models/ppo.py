@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from networks import PolicyNet, ValueNet
+from models.networks import PolicyNet, ValueNet
 
 class PPO:
     ''' PPO 算法,采用截断方式 '''
@@ -22,7 +22,7 @@ class PPO:
         return action.item()
 
     def update(self, transition_dict):
-        import rl_utils
+        from utils.rl_utils import compute_advantage
         states = torch.tensor(transition_dict['states'], dtype=torch.float).to(self.device)
         actions = torch.tensor(transition_dict['actions']).view(-1, 1).to(self.device)
         rewards = torch.tensor(transition_dict['rewards'], dtype=torch.float).view(-1, 1).to(self.device)
@@ -30,7 +30,7 @@ class PPO:
         dones = torch.tensor(transition_dict['dones'], dtype=torch.float).view(-1, 1).to(self.device)
         td_target = rewards + self.gamma * self.critic(next_states) * (1 - dones)
         td_delta = td_target - self.critic(states)
-        advantage = rl_utils.compute_advantage(self.gamma, self.lmbda, td_delta.cpu()).to(self.device)
+        advantage = compute_advantage(self.gamma, self.lmbda, td_delta.cpu()).to(self.device)
         old_log_probs = torch.log(self.actor(states).gather(1, actions)).detach()
         log_probs = torch.log(self.actor(states).gather(1, actions))
         ratio = torch.exp(log_probs - old_log_probs)

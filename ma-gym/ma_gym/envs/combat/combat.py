@@ -429,18 +429,26 @@ class Combat(gym.Env):
                 if action <= 4:
                     self.__update_opp_pos(opp_i, action)
         win = False
-        # step overflow or all opponents dead
-        if (self._step_count >= self._max_steps) \
-                or (sum([v for k, v in self.opp_health.items()]) == 0) \
-                or (sum([v for k, v in self.agent_health.items()]) == 0):
+        # 检查胜负条件：只要任意一方队伍全部死亡，立即终止回合
+        opp_total_health = sum([v for k, v in self.opp_health.items()])
+        agent_total_health = sum([v for k, v in self.agent_health.items()])
+        
+        if opp_total_health == 0:
+            # 对手全灭，我方胜利
             self._agent_dones = [True for _ in range(self.n_agents)]
-            if (sum([v for k, v in self.opp_health.items()]) == 0):
-                win = True
+            win = True
+        elif agent_total_health == 0:
+            # 我方全灭，我方失败
+            self._agent_dones = [True for _ in range(self.n_agents)]
+            win = False
+        elif self._step_count >= self._max_steps:
+            # 达到最大步数，平局
+            self._agent_dones = [True for _ in range(self.n_agents)]
 
         for i in range(self.n_agents):
             self._total_episode_reward[i] += rewards[i]
 
-        return self.get_agent_obs(), rewards, self._agent_dones, {'health': self.agent_health, 'win': win}
+        return self.get_agent_obs(), rewards, self._agent_dones, {'health': self.agent_health, 'opponent_health': self.opp_health, 'win': win}
 
     def seed(self, n):
         self.np_random, seed1 = seeding.np_random(n)
