@@ -5,6 +5,8 @@ from env_utils import make_env
 from ppo import PPO
 from plot_utils import plot_win_rate
 
+import sys
+
 # 超参数
 def main():
     actor_lr = 3e-4
@@ -23,8 +25,9 @@ def main():
     agent = PPO(state_dim, hidden_dim, action_dim, actor_lr, critic_lr, lmbda, eps, gamma, device)
     win_list = []
     for i in range(10):
-        with tqdm(total=int(num_episodes/10), desc='Iteration %d' % i) as pbar:
-            for i_episode in range(int(num_episodes/10)):
+        total_episodes = int(num_episodes/10)
+        with tqdm(total=total_episodes, desc=f'Iteration {i}', leave=True, ncols=160, dynamic_ncols=True, file=sys.stdout) as pbar:
+            for i_episode in range(total_episodes):
                 transition_dict_1 = {'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []}
                 transition_dict_2 = {'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []}
                 s = env.reset()
@@ -33,6 +36,7 @@ def main():
                     a_1 = agent.take_action(s[0])
                     a_2 = agent.take_action(s[1])
                     next_s, r, done, info = env.step([a_1, a_2])
+                    print('info:', info)  # 调试输出
                     transition_dict_1['states'].append(s[0])
                     transition_dict_1['actions'].append(a_1)
                     transition_dict_1['next_states'].append(next_s[0])
@@ -49,8 +53,10 @@ def main():
                 agent.update(transition_dict_1)
                 agent.update(transition_dict_2)
                 if (i_episode+1) % 100 == 0:
-                    pbar.set_postfix({'episode': '%d' % (num_episodes/10 * i + i_episode+1), 'return': '%.3f' % np.mean(win_list[-100:])})
+                    pbar.set_postfix({'episode': f'{(i)*total_episodes + i_episode+1}', 'return': f'{np.mean(win_list[-100:]):.3f}'})
                 pbar.update(1)
+        # 每轮结束后只输出一行统计信息
+        print(f"Iteration {i}: 100%|{'█'*10}| {total_episodes}/{total_episodes} [done], episode={(i+1)*total_episodes}, return={np.mean(win_list[-100:]):.3f}")
     plot_win_rate(win_list)
 
 if __name__ == "__main__":
