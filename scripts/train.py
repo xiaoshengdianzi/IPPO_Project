@@ -1,24 +1,36 @@
+import os
+import sys
+import shutil
+from datetime import datetime
+# 添加项目根目录到Python路径
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import torch
 import numpy as np
 from tqdm import tqdm
 from utils.env_utils import make_env
 from models.ppo import PPO
 from utils.plot_utils import plot_win_rate
+from config import train_config
 
-import sys
-
-# 超参数
 def main():
-    actor_lr = 3e-4
-    critic_lr = 1e-3
-    num_episodes = 100000
-    hidden_dim = 64
-    gamma = 0.99
-    lmbda = 0.97
-    eps = 0.2
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    team_size = 2
-    grid_size = (15, 15)
+    # 从配置文件加载参数
+    actor_lr = train_config['actor_lr']
+    critic_lr = train_config['critic_lr']
+    num_episodes = train_config['num_episodes']
+    hidden_dim = train_config['hidden_dim']
+    gamma = train_config['gamma']
+    lmbda = train_config['lmbda']
+    eps = train_config['eps']
+    
+    # 设备选择
+    if train_config['device'] == 'auto':
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    else:
+        device = torch.device(train_config['device'])
+    
+    team_size = train_config['team_size']
+    grid_size = train_config['grid_size']
     env = make_env(grid_size, team_size)
     state_dim = env.observation_space[0].shape[0]
     action_dim = env.action_space[0].n
@@ -28,11 +40,13 @@ def main():
     
     # 尝试加载已有权重
     try:
-        agent.actor.load_state_dict(torch.load('saved_models/actor_model.pth'))
-        agent.critic.load_state_dict(torch.load('saved_models/critic_model.pth'))
+        agent.actor.load_state_dict(torch.load(f'{train_config["save_dir"]}/actor_model.pth', weights_only=True))
+        agent.critic.load_state_dict(torch.load(f'{train_config["save_dir"]}/critic_model.pth', weights_only=True))
         print("成功加载已有模型权重")
     except FileNotFoundError:
         print("未找到已有权重，从头开始训练")
+    except RuntimeError as e:
+        print(f"模型权重与当前网络结构不匹配，从头开始训练: {e}")
     
     for i in range(10):
         total_episodes = int(num_episodes/10)
@@ -49,12 +63,12 @@ def main():
                     transition_dict_1['states'].append(s[0])
                     transition_dict_1['actions'].append(a_1)
                     transition_dict_1['next_states'].append(next_s[0])
-                    transition_dict_1['rewards'].append(r[0]+100 if info['win'] else r[0]-0.1)
+                    transition_dict_1['rewards'].append(r[0]+train_config['win_reward'] if info['win'] else r[0]+train_config['lose_penalty'])
                     transition_dict_1['dones'].append(False)
                     transition_dict_2['states'].append(s[1])
                     transition_dict_2['actions'].append(a_2)
                     transition_dict_2['next_states'].append(next_s[1])
-                    transition_dict_2['rewards'].append(r[1]+100 if info['win'] else r[1]-0.1)
+                    transition_dict_2['rewards'].append(r[1]+train_config['win_reward'] if info['win'] else r[1]+train_config['lose_penalty'])
                     transition_dict_2['dones'].append(False)
                     s = next_s
                     terminal = all(done)
@@ -70,27 +84,53 @@ def main():
                     # 保存最佳模型
                     if current_win_rate > best_win_rate:
                         best_win_rate = current_win_rate
-                        torch.save(agent.actor.state_dict(), 'saved_models/best_actor_model.pth')
-                        torch.save(agent.critic.state_dict(), 'saved_models/best_critic_model.pth')
-                        print(f"\n保存最佳模型，当前胜率: {current_win_rate:.3f}")
+                        torch.save(agent.actor.state_dict(), f'{train_config["save_dir"]}/best_actor_model.pth')
+                        torch.save(agent.critic.state_dict(), f'{train_config["save_dir"]}/best_critic_model.pth')
                 
                 pbar.update(1)
         
         # 每轮结束后保存当前模型
-        torch.save(agent.actor.state_dict(), 'saved_models/actor_model.pth')
-        torch.save(agent.critic.state_dict(), 'saved_models/critic_model.pth')
+        torch.save(agent.actor.state_dict(), f'{train_config["save_dir"]}/actor_model.pth')
+        torch.save(agent.critic.state_dict(), f'{train_config["save_dir"]}/critic_model.pth')
         current_win_rate = np.mean(win_list[-100:])
         print(f"Iteration {i}: 100%|{'█'*10}| {total_episodes}/{total_episodes} [done], episode={(i+1)*total_episodes}, return={current_win_rate:.3f}")
     
     # 训练结束后保存最终模型和最佳模型
-    torch.save(agent.actor.state_dict(), 'saved_models/final_actor_model.pth')
-    torch.save(agent.critic.state_dict(), 'saved_models/final_critic_model.pth')
-    print(f"\n训练完成！最终胜率: {np.mean(win_list[-100:]):.3f}")
-    print("模型权重已保存为: saved_models/actor_model.pth, saved_models/critic_model.pth")
-    print("最佳模型已保存为: saved_models/best_actor_model.pth, saved_models/best_critic_model.pth")
-    print("最终模型已保存为: saved_models/final_actor_model.pth, saved_models/final_critic_model.pth")
+    torch.save(agent.actor.state_dict(), f'{train_config["save_dir"]}/final_actor_model.pth')
+    torch.save(agent.critic.state_dict(), f'{train_config["save_dir"]}/final_critic_model.pth')
     
+    # 创建带时间戳的训练记录文件夹
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_folder = f"{train_config['save_dir']}/training_runs/run_{timestamp}"
+    os.makedirs(run_folder, exist_ok=True)
+    
+    # 复制最佳权重到训练记录文件夹
+    shutil.copy(f'{train_config["save_dir"]}/best_actor_model.pth', f"{run_folder}/best_actor_model.pth")
+    shutil.copy(f'{train_config["save_dir"]}/best_critic_model.pth', f"{run_folder}/best_critic_model.pth")
+    
+    # 保存训练信息
+    final_win_rate = np.mean(win_list[-100:])
+    with open(f"{run_folder}/training_info.txt", "w") as f:
+        f.write(f"Training Run: {timestamp}\n")
+        f.write(f"Final Win Rate: {final_win_rate:.3f}\n")
+        f.write(f"Actor LR: {actor_lr}\n")
+        f.write(f"Critic LR: {critic_lr}\n")
+        f.write(f"Hidden Dim: {hidden_dim}\n")
+        f.write(f"Total Episodes: {num_episodes}\n")
+    
+    print(f"\n训练完成！最终胜率: {final_win_rate:.3f}")
+    print(f"模型权重已保存为: {train_config['save_dir']}/actor_model.pth, {train_config['save_dir']}/critic_model.pth")
+    print(f"最佳模型已保存为: {train_config['save_dir']}/best_actor_model.pth, {train_config['save_dir']}/best_critic_model.pth")
+    print(f"最终模型已保存为: {train_config['save_dir']}/final_actor_model.pth, {train_config['save_dir']}/final_critic_model.pth")
+    print(f"训练记录已保存到: {run_folder}")
+    
+    # 生成胜率曲线
     plot_win_rate(win_list)
+    
+    # 复制胜率曲线到训练记录文件夹
+    if os.path.exists('win_rate_plot.png'):
+        shutil.copy('win_rate_plot.png', f"{run_folder}/win_rate_plot.png")
+        print(f"胜率曲线已保存到: {run_folder}/win_rate_plot.png")
 
 if __name__ == "__main__":
     main()

@@ -207,24 +207,93 @@ class Combat(gym.Env):
         self._agent_cool = {_: True for _ in range(self.n_agents)}
         self._opp_cool = {_: True for _ in range(self._n_opponents)}
         self._agent_dones = [False for _ in range(self.n_agents)]
+        
+        # 初始化子弹系统
+        self.bullets = []  # 存储子弹信息：{'pos': [x, y], 'target': [x, y], 'color': 'red'/'blue', 'progress': 0.0}
 
         self.__init_full_obs()
         return self.get_agent_obs()
 
     def render(self, mode='human'):
         img = copy.copy(self._base_img)
+        from PIL import ImageDraw
+
+        draw = ImageDraw.Draw(img)
+
+        # 更新并绘制子弹
+        new_bullets = []
+        bullet_speed = 0.3  # 子弹速度（每帧移动的距离）
+        
+        for bullet in self.bullets:
+            # 更新子弹进度
+            bullet['progress'] += bullet_speed
+            
+            if bullet['progress'] < 1.0:
+                # 计算子弹当前位置（线性插值）
+                start_x, start_y = bullet['pos']
+                target_x, target_y = bullet['target']
+                
+                current_x = start_x + (target_x - start_x) * bullet['progress']
+                current_y = start_y + (target_y - start_y) * bullet['progress']
+                
+                # 转换为像素坐标
+                pixel_x = int(current_y * CELL_SIZE + CELL_SIZE / 2)
+                pixel_y = int(current_x * CELL_SIZE + CELL_SIZE / 2)
+                
+                # 绘制子弹（小圆点）
+                bullet_radius = 3
+                draw.ellipse([pixel_x - bullet_radius, pixel_y - bullet_radius,
+                            pixel_x + bullet_radius, pixel_y + bullet_radius],
+                           fill=bullet['color'])
+                
+                new_bullets.append(bullet)
+        
+        # 更新子弹列表（移除已到达目标的子弹）
+        self.bullets = new_bullets
 
         # draw agents
         for agent_i in range(self.n_agents):
             if self.agent_health[agent_i] > 0:
-                fill_cell(img, self.agent_pos[agent_i], cell_size=CELL_SIZE, fill=AGENT_COLOR)
+                x, y = self.agent_pos[agent_i]
+                # 绘制血量条背景（灰色）
+                draw.rectangle([y * CELL_SIZE, x * CELL_SIZE, 
+                              (y + 1) * CELL_SIZE, (x + 1) * CELL_SIZE], 
+                             fill='gray')
+                
+                # 根据血量绘制颜色块
+                health_ratio = self.agent_health[agent_i] / 3.0  # 最大血量为3
+                if health_ratio > 0:
+                    # 计算血量条的高度
+                    health_height = int(CELL_SIZE * health_ratio)
+                    # 绘制血量条（红色）
+                    draw.rectangle([y * CELL_SIZE, x * CELL_SIZE + (CELL_SIZE - health_height),
+                                  (y + 1) * CELL_SIZE, (x + 1) * CELL_SIZE],
+                                 fill='red')
+                
+                # 绘制编号
                 write_cell_text(img, text=str(agent_i + 1), pos=self.agent_pos[agent_i], cell_size=CELL_SIZE,
                                 fill='white', margin=0.3)
 
         # draw opponents
         for opp_i in range(self._n_opponents):
             if self.opp_health[opp_i] > 0:
-                fill_cell(img, self.opp_pos[opp_i], cell_size=CELL_SIZE, fill=OPPONENT_COLOR)
+                x, y = self.opp_pos[opp_i]
+                # 绘制血量条背景（灰色）
+                draw.rectangle([y * CELL_SIZE, x * CELL_SIZE, 
+                              (y + 1) * CELL_SIZE, (x + 1) * CELL_SIZE], 
+                             fill='gray')
+                
+                # 根据血量绘制颜色块
+                health_ratio = self.opp_health[opp_i] / 3.0  # 最大血量为3
+                if health_ratio > 0:
+                    # 计算血量条的高度
+                    health_height = int(CELL_SIZE * health_ratio)
+                    # 绘制血量条（蓝色）
+                    draw.rectangle([y * CELL_SIZE, x * CELL_SIZE + (CELL_SIZE - health_height),
+                                  (y + 1) * CELL_SIZE, (x + 1) * CELL_SIZE],
+                                 fill='blue')
+                
+                # 绘制编号
                 write_cell_text(img, text=str(opp_i + 1), pos=self.opp_pos[opp_i], cell_size=CELL_SIZE,
                                 fill='white', margin=0.3)
 
@@ -395,6 +464,13 @@ class Combat(gym.Env):
                     target_opp = action - 5
                     if self.is_fireable(self.agent_pos[agent_i], self.opp_pos[target_opp]) \
                             and opp_health[target_opp] > 0:
+                        # 添加子弹
+                        self.bullets.append({
+                            'pos': self.agent_pos[agent_i].copy(),
+                            'target': self.opp_pos[target_opp].copy(),
+                            'color': 'red',
+                            'progress': 0.0
+                        })
                         opp_health[target_opp] -= 1
                         rewards[agent_i] += 1
 
@@ -409,6 +485,13 @@ class Combat(gym.Env):
                 if action > 4:  # attack actions
                     if self.is_fireable(self.opp_pos[opp_i], self.agent_pos[target_agent]) \
                             and agent_health[target_agent] > 0:
+                        # 添加子弹
+                        self.bullets.append({
+                            'pos': self.opp_pos[opp_i].copy(),
+                            'target': self.agent_pos[target_agent].copy(),
+                            'color': 'blue',
+                            'progress': 0.0
+                        })
                         agent_health[target_agent] -= 1
                         rewards[target_agent] -= 1
 

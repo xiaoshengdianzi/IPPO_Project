@@ -1,0 +1,12 @@
+Prediction Time: 20260326_103755
+Model Path: saved_models/best_actor_model.pth
+Result: 胜利
+Total Steps: 5
+
+Battle Log:
+--------------------------------------------------
+Step 1: Agent health=[3, 3], Opponent health=[3, 3], Rewards=[0, 0], Actions=[0, 0]
+Step 2: Agent health=[2, 3], Opponent health=[2, 3], Rewards=[0, 0], Actions=[5, 0]
+Step 3: Agent health=[1, 2], Opponent health=[1, 2], Rewards=[0, 0], Actions=[5, 6]
+Step 4: Agent health=[0, 1], Opponent health=[0, 1], Rewards=[0, 0], Actions=[5, 6]
+Step 5: Agent health=[0, 0], Opponent health=[0, 0], Rewards=[0, 0], Actions=[6, 6]

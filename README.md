@@ -27,6 +27,7 @@
 │   ├── critic_model.pth         # 当前价值网络权重
 │   ├── final_actor_model.pth    # 最终策略网络权重
 │   └── final_critic_model.pth   # 最终价值网络权重
+├── config.py                    # 配置文件
 └── README.md                    # 项目说明
 ```
 
@@ -49,25 +50,35 @@
 
 ## 使用方法
 
-### 训练
+### 1. 配置参数
+所有训练和测试参数都在 `config.py` 文件中定义，包括：
+- 环境配置（网格大小、队伍规模）
+- 训练参数（学习率、隐藏层维度、训练回合数）
+- 奖励配置（胜利奖励、失败惩罚）
+- 保存配置（保存目录、保存间隔）
+- 设备配置（自动选择、指定CUDA或CPU）
+
+### 2. 训练
 ```bash
 python scripts/train.py
 ```
 - 训练过程中自动保存模型到 `saved_models/` 目录
 - 支持断点续训
+- 自动保存最佳模型、当前模型和最终模型
 
-### 可视化测试
+### 3. 可视化测试
 ```bash
 python scripts/test_visualization.py
 ```
-- 选择模式1：可视化测试
-- 选择模式2：性能测试
+- 选择模式1：可视化测试（显示对战画面）
+- 选择模式2：性能测试（计算胜率）
 
-### 预测
+### 4. 预测
 ```bash
 python scripts/predict.py
 ```
 - 加载 `saved_models/best_actor_model.pth` 进行对战
+- 显示实时对战信息
 
 ## 模型文件说明
 
