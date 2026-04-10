@@ -38,43 +38,37 @@ def main():
     win_list = []
     best_win_rate = 0.0
     
-    # 尝试加载已有权重
-    try:
-        agent.actor.load_state_dict(torch.load(f'{train_config["save_dir"]}/actor_model.pth', weights_only=True))
-        agent.critic.load_state_dict(torch.load(f'{train_config["save_dir"]}/critic_model.pth', weights_only=True))
-        print("成功加载已有模型权重")
-    except FileNotFoundError:
-        print("未找到已有权重，从头开始训练")
-    except RuntimeError as e:
-        print(f"模型权重与当前网络结构不匹配，从头开始训练: {e}")
+    # 不加载已有权重，从头开始训练
+    print("从头开始训练新模型")
     
     for i in range(10):
         total_episodes = int(num_episodes/10)
         with tqdm(total=total_episodes, desc=f'Iteration {i}', leave=True, ncols=160, dynamic_ncols=True, file=sys.stdout) as pbar:
             for i_episode in range(total_episodes):
-                transition_dict_1 = {'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []}
-                transition_dict_2 = {'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []}
+                # 创建过渡字典列表，支持任意团队规模
+                transition_dicts = [{'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []} for _ in range(team_size)]
                 s = env.reset()
                 terminal = False
                 while not terminal:
-                    a_1 = agent.take_action(s[0])
-                    a_2 = agent.take_action(s[1])
-                    next_s, r, done, info = env.step([a_1, a_2])
-                    transition_dict_1['states'].append(s[0])
-                    transition_dict_1['actions'].append(a_1)
-                    transition_dict_1['next_states'].append(next_s[0])
-                    transition_dict_1['rewards'].append(r[0]+train_config['win_reward'] if info['win'] else r[0]+train_config['lose_penalty'])
-                    transition_dict_1['dones'].append(False)
-                    transition_dict_2['states'].append(s[1])
-                    transition_dict_2['actions'].append(a_2)
-                    transition_dict_2['next_states'].append(next_s[1])
-                    transition_dict_2['rewards'].append(r[1]+train_config['win_reward'] if info['win'] else r[1]+train_config['lose_penalty'])
-                    transition_dict_2['dones'].append(False)
+                    # 为每个智能体生成动作
+                    actions = [agent.take_action(s[i]) for i in range(team_size)]
+                    next_s, r, done, info = env.step(actions)
+                    
+                    # 收集每个智能体的数据
+                    for i in range(team_size):
+                        transition_dicts[i]['states'].append(s[i])
+                        transition_dicts[i]['actions'].append(actions[i])
+                        transition_dicts[i]['next_states'].append(next_s[i])
+                        transition_dicts[i]['rewards'].append(r[i]+train_config['win_reward'] if info['win'] else r[i]+train_config['lose_penalty'])
+                        transition_dicts[i]['dones'].append(False)
+                    
                     s = next_s
                     terminal = all(done)
                 win_list.append(1 if info["win"] else 0)
-                agent.update(transition_dict_1)
-                agent.update(transition_dict_2)
+                
+                # 更新每个智能体的模型
+                for i in range(team_size):
+                    agent.update(transition_dicts[i])
                 
                 # 每100回合检查一次胜率，保存最佳模型
                 if (i_episode+1) % 100 == 0:

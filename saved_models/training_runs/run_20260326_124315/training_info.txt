@@ -1,0 +1,6 @@
+Training Run: 20260326_124315
+Final Win Rate: 0.710
+Actor LR: 0.0002
+Critic LR: 0.001
+Hidden Dim: 128
+Total Episodes: 100000

@@ -1,7 +1,0 @@
-Training Run: run_20260326_001
-Final Win Rate: 0.580
-Actor LR: 2e-4
-Critic LR: 1e-3
-Hidden Dim: 128
-Total Episodes: 100000
-Training Date: 2026-03-26

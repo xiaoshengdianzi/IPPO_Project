@@ -3,23 +3,23 @@
 train_config = {
     # 环境配置
     'grid_size': (15, 15),
-    'team_size': 2,
+    'team_size': 5,
     
     # 训练参数
     'num_episodes': 100000,
     'max_steps': 100,
     
     # PPO算法参数
-    'actor_lr': 2e-4,  # 降低学习率以减少波动
-    'critic_lr': 1e-3,
+    'actor_lr': 1e-4,  # 降低学习率以便更好地探索
+    'critic_lr': 5e-4,  # 降低学习率以便更好地探索
     'hidden_dim': 128,
     'gamma': 0.99,  # 折扣因子
     'lmbda': 0.97,  # GAE参数
     'eps': 0.2,     # PPO截断参数
     
     # 奖励配置
-    'win_reward': 100,
-    'lose_penalty': -0.1,
+    'win_reward': 200,  # 增加胜利奖励
+    'lose_penalty': -0.05,  # 减少失败惩罚
     
     # 保存配置
     'save_interval': 100,  # 每100回合检查一次胜率
