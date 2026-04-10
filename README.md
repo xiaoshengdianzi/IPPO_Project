@@ -1,9 +1,9 @@
 # IPPO_Project
 
-![Network Architecture](win_rate_plot.png)
+![网络架构](win_rate_plot.png)
 
-## Overview
-Inter-agent Policy Optimization (IPPO) implementation for multi-agent combat environment. This project demonstrates training multiple agents to collaborate in a combat scenario using Proximal Policy Optimization (PPO) algorithm.
+## 项目概述
+本项目实现了独立近端策略优化（Independent Proximal Policy Optimization, IPPO）算法，用于多智能体对战环境。通过近端策略优化（PPO）算法训练多个智能体在战斗场景中进行协作。
 
 多智能体强化学习（Multi-Agent Reinforcement Learning, MARL）是强化学习领域的重要分支，相比单智能体强化学习，MARL面临着更多挑战：
 - **非稳态环境**：多个智能体实时动态交互，环境对单个智能体而言是非稳态的
@@ -25,48 +25,48 @@ $$J^{CLIP}_i(\theta_i) = \mathbb{E}_t \left[ \min(r_{i,t}(\theta_i) \hat{A}_{i,t
 
 其中，$r_{i,t}(\theta_i) = \frac{\pi_{\theta_i}(a_{i,t}|s_{i,t})}{\pi_{\theta_{i,old}}(a_{i,t}|s_{i,t})}$ 是智能体 $i$ 的概率比值。
 
-## Installation
+## 安装步骤
 
-1. Clone the repository:
+1. 克隆仓库：
    ```bash
    git clone https://github.com/xiaoshengdianzi/IPPO_Project.git
    cd IPPO_Project
    ```
 
-2. Create and activate virtual environment:
+2. 创建并激活虚拟环境：
    ```bash
    python -m venv .venv
    .venv\Scripts\activate
    ```
 
-3. Install dependencies:
+3. 安装依赖：
    ```bash
    pip install -r requirements.txt
    ```
 
-## Usage
+## 使用方法
 
-### Training Command
+### 训练命令
 ```bash
 python scripts/train.py
 ```
 
-### Prediction Command
+### 预测命令
 ```bash
 python scripts/predict.py
 ```
 
-### Configuration
-Edit `config.py` to adjust training parameters:
-- `team_size`: Number of agents per team (2 or 5)
-- `grid_size`: Grid size for the combat environment
-- `num_episodes`: Total training episodes
-- `actor_lr`/`critic_lr`: Learning rates for actor and critic networks
-- `win_reward`/`lose_penalty`: Reward configuration
+### 配置说明
+编辑 `config.py` 文件调整训练参数：
+- `team_size`: 每队智能体数量（2或5）
+- `grid_size`: 对战环境的网格大小
+- `num_episodes`: 总训练回合数
+- `actor_lr`/`critic_lr`: Actor和Critic网络的学习率
+- `win_reward`/`lose_penalty`: 奖励配置
 
-## Experiment Results
+## 实验结果
 
-### Combat Environment
+### 对战环境
 项目采用 ma_gym 库中的 Combat 环境，这是一个经典的二维网格对战环境：
 
 **环境规则：**
@@ -97,33 +97,33 @@ Edit `config.py` to adjust training parameters:
 - IPPO 扩展性强，不会因智能体数量增加而造成维度灾难
 - 但收敛性难以保证，需要仔细调整超参数
 
-## Results
-![Win Rate](win_rate_plot.png)
+## 训练结果
+![胜率曲线](win_rate_plot.png)
 
-## Project Structure
+## 项目结构
 ```
 ├── scripts/
-│   ├── train.py            # Training script
-│   ├── predict.py          # Prediction script
-│   └── test_visualization.py  # Visualization test
+│   ├── train.py            # 训练脚本
+│   ├── predict.py          # 预测脚本
+│   └── test_visualization.py  # 可视化测试
 ├── models/
-│   ├── ppo.py              # PPO algorithm implementation
-│   └── networks.py         # Neural network definitions
+│   ├── ppo.py              # PPO算法实现
+│   └── networks.py         # 神经网络定义
 ├── utils/
-│   ├── env_utils.py        # Environment utilities
-│   ├── plot_utils.py       # Plotting utilities
-│   └── rl_utils.py         # Reinforcement learning utilities
-├── ma-gym/                 # Multi-agent gym environment
-├── saved_models/           # Saved model weights
-├── results/                # Prediction and visualization results
-├── config.py               # Configuration file
-├── requirements.txt        # Project dependencies
-├── README.md               # Project documentation
-└── LICENSE                 # License file
+│   ├── env_utils.py        # 环境工具
+│   ├── plot_utils.py       # 绘图工具
+│   └── rl_utils.py         # 强化学习工具
+├── ma-gym/                 # 多智能体gym环境
+├── saved_models/           # 保存的模型权重
+├── results/                # 预测和可视化结果
+├── config.py               # 配置文件
+├── requirements.txt        # 项目依赖
+├── README.md               # 项目文档
+└── LICENSE                 # 许可证文件
 ```
 
-## Contributing
-How to contribute to the project.
+## 贡献指南
+如何为项目做出贡献。
 
-## License
-This project is licensed under the MIT license.
+## 许可证
+本项目采用MIT许可证。
