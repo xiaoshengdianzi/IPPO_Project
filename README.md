@@ -110,8 +110,7 @@ python scripts/predict.py
 - IPPO 扩展性强，不会因智能体数量增加而造成维度灾难
 - 但收敛性难以保证，需要仔细调整超参数
 
-## 训练结果
-![胜率曲线](win_rate_plot.png)
+
 
 ## 项目结构
 ```
