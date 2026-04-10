@@ -257,3 +257,7 @@ logs/
 !LICENSE
 !.gitignore
 !outputs/
+
+# Local files not to be uploaded
+7、多智能体强化学习入门IPPO复现demo.md
+download_images.py
