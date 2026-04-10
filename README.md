@@ -1,7 +1,5 @@
 # IPPO_Project
 
-![网络架构](win_rate_plot.png)
-
 ## 项目概述
 本项目实现了独立近端策略优化（Independent Proximal Policy Optimization, IPPO）算法，用于多智能体对战环境。通过近端策略优化（PPO）算法训练多个智能体在战斗场景中进行协作。
 
