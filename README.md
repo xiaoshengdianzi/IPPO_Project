@@ -39,7 +39,9 @@ IPPO 的全称是**独立近端策略优化算法**，它本质上是将 PPO 算
 
 $$J^{CLIP}_i(\theta_i) = \mathbb{E}_t \left[ \min(r_{i,t}(\theta_i) \hat{A}_{i,t}, \text{clip}(r_{i,t}(\theta_i), 1-\epsilon, 1+\epsilon) \hat{A}_{i,t}) \right]$$
 
-其中，$r_{i,t}(\theta_i) = \frac{\pi_{\theta_i}(a_{i,t}|s_{i,t})}{\pi_{\theta_{i,old}}(a_{i,t}|s_{i,t})}$ 是智能体 $i$ 的概率比值。
+其中，
+$$r_{i,t}(\theta_i) = \frac{\pi_{\theta_i}(a_{i,t}|s_{i,t})}{\pi_{\theta_{i,old}}(a_{i,t}|s_{i,t})}$$
+是智能体 $i$ 的概率比值。
 
 ### 核心原理补充
 在多智能体强化学习（MARL）的语境下，IPPO 采用的就是最简单直接的**去中心化训练，去中心化执行 (Decentralized Training, Decentralized Execution, DTDE)**。
